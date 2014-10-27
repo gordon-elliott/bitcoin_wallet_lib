@@ -1,0 +1,6 @@
+blinker
+flask
+pyzmq
+parse
+behave
+hamcrest
