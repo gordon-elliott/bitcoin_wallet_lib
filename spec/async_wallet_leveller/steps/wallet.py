@@ -3,7 +3,7 @@ __copyright__ = 'Copyright(c) Gordon Elliott 2014'
 #
 # To execute
 #
-# PYTHONPATH=/projects/bitcoin/src:/projects/bitcoin/test:/projects/bitcoin/python-bitcoinrpc-master behave wallet_leveller
+# PYTHONPATH=/projects/bitcoin/src:/projects/bitcoin/test:/projects/bitcoin/python-bitcoinrpc-master behave async_wallet_leveller
 #
 import parse
 

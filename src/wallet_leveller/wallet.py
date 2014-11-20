@@ -15,6 +15,8 @@ LOG = logging.getLogger(__name__)
 MINIMUM_CONFIRMATIONS = 1
 
 class Wallet(object):
+    """ Wallet with one account
+    """
 
     def __init__(self, uri, account_name, fee):
         self._connection = AuthServiceProxy(uri)
@@ -52,10 +54,13 @@ class Wallet(object):
         if validation['isvalid']:
             try:
                 transaction_id = self._connection.sendfrom(self._account_name, to_address, amount, MINIMUM_CONFIRMATIONS, 'out', 'in')
-                transaction_details = self._connection.gettransaction(transaction_id)
-                fee = transaction_details.get(u'fee')
-                # LOG.info('transaction_id %r, fee %r', transaction_id, fee)
-                return transaction_id, fee
+                if transaction_id is not None:
+                    transaction_details = self._connection.gettransaction(transaction_id)
+                    fee = transaction_details.get(u'fee')
+                    # LOG.info('transaction_id %r, fee %r', transaction_id, fee)
+                    return transaction_id, fee
+                else:
+                    return None, None
             except JSONRPCException as json_ex:
                 LOG.exception('JSON Exception calling sendfrom(%s,_,%d) %r' % (self._account_name, amount, json_ex.error))
                 raise
