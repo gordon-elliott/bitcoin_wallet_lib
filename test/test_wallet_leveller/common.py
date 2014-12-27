@@ -5,7 +5,7 @@ import parse
 from behave import register_type
 from decimal import Decimal
 
-@parse.with_pattern(r"\d*\.?\d*")
+@parse.with_pattern(r"-?\d*\.?\d*")
 def parse_decimal(text):
     return Decimal(text)
 

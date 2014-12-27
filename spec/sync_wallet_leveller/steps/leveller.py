@@ -11,10 +11,20 @@ from test_wallet_leveller.common import wallet_from_name
 def create_leveller(context):
     context.leveller = Leveller()
 
-@given('we add the {wallet_name} wallet to the leveller specifying a {low_water_mark:Decimal} BTC low water mark')
-def add_wallet(context, wallet_name, low_water_mark):
+@given('we add the {wallet_name} wallet to the leveller specifying a {low_water_mark:Decimal} BTC low water mark and a {high_water_mark:Decimal} BTC high water mark')
+def add_wallet(context, wallet_name, low_water_mark, high_water_mark):
     wallet = wallet_from_name(context, wallet_name)
-    context.leveller.add_wallet(wallet, low_water_mark)
+    context.leveller.add_wallet(wallet, low_water_mark, high_water_mark)
+
+@given('we add the {wallet_name} wallet to the leveller with no low water mark and a {high_water_mark:Decimal} BTC high water mark')
+def add_wallet_no_lwm(context, wallet_name, high_water_mark):
+    wallet = wallet_from_name(context, wallet_name)
+    context.leveller.add_wallet(wallet, None, high_water_mark)
+
+@given('we add the {wallet_name} wallet to the leveller with no high water mark and a {low_water_mark:Decimal} BTC low water mark')
+def add_wallet_no_hwm(context, wallet_name, low_water_mark):
+    wallet = wallet_from_name(context, wallet_name)
+    context.leveller.add_wallet(wallet, low_water_mark, None)
 
 @given('we connect the {source} wallet to the {destination} wallet specifying a link weight of {link_weight:d}')
 def connect_wallets(context, source, destination, link_weight):
@@ -30,6 +40,7 @@ def ask_the_leveller(context):
 
 @when('the leveller moves {transfer_amount:Decimal} BTC from the {source} wallet to the {destination} wallet')
 def leveller_moves_funds(context, transfer_amount, source, destination):
+    # TODO which agent should be responsible for executing the transfers?
     source_wallet = wallet_from_name(context, source)
     destination_wallet = wallet_from_name(context, destination)
 
@@ -40,7 +51,14 @@ def required_funds(context, wallet_name, additional_amount):
     wallet = wallet_from_name(context, wallet_name)
     required = context.leveller.required_funds(wallet)
 
-    assert_that(additional_amount, equal_to(required))
+    assert_that(required, equal_to(additional_amount))
+
+@then('the leveller can identify that the {wallet_name} wallet has {surplus_amount:Decimal} BTC surplus funds')
+def surplus_funds(context, wallet_name, surplus_amount):
+    wallet = wallet_from_name(context, wallet_name)
+    surplus = context.leveller.surplus_funds(wallet)
+
+    assert_that(surplus, equal_to(surplus_amount))
 
 @then('the leveller will identify that {transfer_amount:Decimal} BTC needs to be moved from the {source} wallet to the {destination} wallet')
 def proposed_transfers(context, transfer_amount, source, destination):

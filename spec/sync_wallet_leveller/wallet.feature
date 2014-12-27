@@ -1,3 +1,5 @@
+# Copyright(c) Gordon Elliott 2014
+
 Feature: Wallets manage funds
 
   Scenario: Transfer 0.004 BTC between wallets
