@@ -4,7 +4,7 @@ from behave import given, when, then
 from hamcrest import assert_that, equal_to
 
 from wallet_leveller.leveller import Leveller
-from test_wallet_leveller.common import wallet_from_name
+from test_wallet_leveller.behave_utils import wallet_from_name
 
 
 @given('we have a leveller')

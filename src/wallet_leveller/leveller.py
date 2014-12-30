@@ -19,6 +19,8 @@ __copyright__ = 'Copyright(c) Gordon Elliott 2014'
 """
 from decimal import Decimal
 
+from networkx import DiGraph, is_directed_acyclic_graph, bfs_edges, topological_sort
+
 
 class UnknownWallet(Exception):
     pass
@@ -43,32 +45,40 @@ class _WalletRegistration(object):
                                                 # that there are sufficient funds in the suite of wallets
         self._high_water_mark = high_water_mark # the HWM is more of a guide than a hard limit
                                                 # even after levelling a balance may exceed the HWM
+        self._adjustments = []                  # list of decimal values tentatively adjusting the wallet balance
 
     @property
     def funds_required(self):
-        return self._low_water_mark is not None and self._wallet.balance < self._low_water_mark
+        return self._low_water_mark is not None and self.adjusted_balance < self._low_water_mark
 
     @property
     def funds_surplus(self):
-        return self._wallet.balance > self._high_water_mark
+        return self.adjusted_balance > self._high_water_mark
 
     @property
     def required_funds(self):
         if self.funds_required:
-            return self._high_water_mark - self._wallet.balance
+            return self._high_water_mark - self.adjusted_balance
         else:
             return Decimal('0.0')
 
     @property
     def surplus_funds(self):
         if self.funds_surplus:
-            return self._wallet.balance - self._low_water_mark
+            return self.adjusted_balance - self._low_water_mark
         else:
             return Decimal('0.0')
 
     @property
     def funds_available(self):
-        return self._wallet.balance
+        return self.adjusted_balance
+
+    def apply_adjustment(self, amount):
+        self._adjustments.append(amount)
+
+    @property
+    def adjusted_balance(self):
+        return sum(self._adjustments) + self._wallet.balance
 
 
 class _WalletConnection(object):
@@ -90,6 +100,8 @@ class _WalletConnection(object):
 
     def generate_transfer(self):
         amount = self._destination.required_funds - self._destination.surplus_funds
+        self._source.apply_adjustment(-1 * amount)
+        self._destination.apply_adjustment(amount)
         return _Transfer(self, amount)
 
 
@@ -112,7 +124,7 @@ class _Transfer(object):
         return self._amount
 
     def execute(self):
-        # TODO use sign to establish actual direction of transfer
+        # TODO use wallet to complete the desired transfer
         pass
 
 
@@ -156,8 +168,23 @@ class Leveller(object):
         return Decimal('-1.0') * (self._get_registration(wallet)).surplus_funds
 
     def proposed_transfers(self):
-        return [
-            connection.generate_transfer()
-            for connection in self._connections
-            if connection.transfer_permitted
-        ]
+        graph = self._connection_graph
+        sorted_nodes = topological_sort(graph)
+        transfers = []
+        for src, dest in reversed(list(bfs_edges(graph, source=sorted_nodes[0]))):
+            edge = graph.edge[src][dest]
+            connection = edge['connection']
+            if connection.transfer_permitted:
+                transfers.append(connection.generate_transfer())
+        return transfers
+
+    @property
+    def _connection_graph(self):
+        dag = DiGraph()
+        for connection in self._connections:
+            dag.add_edge(connection._source, connection._destination, connection=connection)
+        return dag
+
+    @property
+    def is_valid_dag(self):
+        return is_directed_acyclic_graph(self._connection_graph)

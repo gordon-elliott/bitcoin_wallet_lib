@@ -12,9 +12,11 @@ from hamcrest import assert_that, equal_to
 
 from decimal import Decimal
 
-from test_wallet_leveller.test_wallet_signals import (
+from test_wallet_leveller.constants import (
     SOURCE_DEFAULT_ACCOUNT,
-    DESTINATION_DEFAULT_ACCOUNT,
+    DESTINATION_DEFAULT_ACCOUNT
+)
+from test_wallet_leveller.test_wallet_signals import (
     check_async
 )
 

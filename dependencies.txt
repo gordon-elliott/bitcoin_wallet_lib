@@ -5,3 +5,4 @@ pyzmq
 parse
 behave
 hamcrest
+networkx

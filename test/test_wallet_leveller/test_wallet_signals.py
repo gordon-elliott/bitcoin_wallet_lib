@@ -16,17 +16,16 @@ from event_api.signals import LISTENER_PORT
 
 from wallet_leveller.wallet import Wallet
 
-SOURCE_URI = "http://admin1:123@127.0.0.1:19001"
-DESTINATION_URI = "http://admin2:123@127.0.0.1:19011"
-
-SOURCE_DEFAULT_ACCOUNT = ''
-DESTINATION_DEFAULT_ACCOUNT = ''
-
-SOURCE_ACCOUNT_PATTERN = 'src-{}'
-DESTINATION_ACCOUNT_PATTERN = 'dst-{}'
-
-FEE = Decimal('0.00001')
-ACCOUNT_OPENING_BALANCE = Decimal('0.1')
+from test_wallet_leveller.constants import (
+    SOURCE_URI,
+    DESTINATION_URI,
+    SOURCE_DEFAULT_ACCOUNT,
+    DESTINATION_DEFAULT_ACCOUNT,
+    SOURCE_ACCOUNT_PATTERN,
+    DESTINATION_ACCOUNT_PATTERN,
+    FEE,
+    ACCOUNT_OPENING_BALANCE
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -71,7 +70,8 @@ class WalletTests(unittest.TestCase):
     _multiprocess_shared_ = True        # used when invoked by Nose
 
     def setUp(self):
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.DEBUG)
+        # logging.getLogger("BitcoinRPC").setLevel(logging.DEBUG)
 
         # each test gets a separate account
         self.source_account_name = SOURCE_ACCOUNT_PATTERN.format(self.id())

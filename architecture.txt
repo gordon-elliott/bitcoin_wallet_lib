@@ -1,0 +1,20 @@
+architecture.txt
+
+Notes on options for application architecture
+
+Copyright(c) Gordon Elliott 2014
+
+---
+
+Client application, web app or mobile, records wallet registrations and relationships.
+
+On demand or on a schedule it submits a request for levelling, providing all the
+wallet details.
+
+A REST webservice responds to the request with a list of transfers which would bring
+the wallets into balance.
+
+The client provides the transfers to the bitcoin client to be executed - details of
+this interaction require investigation.
+
+With appropriate credentials a service could automatically initiate the transfers.

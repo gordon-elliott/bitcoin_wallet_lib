@@ -1,0 +1,19 @@
+__copyright__ = 'Copyright(c) Gordon Elliott 2014'
+
+from decimal import Decimal
+
+
+URI_PATTERN = "http://user:password@127.0.0.1:{}"
+SOURCE_URI = "http://admin1:123@127.0.0.1:19001"
+DESTINATION_URI = "http://admin2:123@127.0.0.1:19011"
+
+DEFAULT_ACCOUNT = ''
+SOURCE_DEFAULT_ACCOUNT = DEFAULT_ACCOUNT
+DESTINATION_DEFAULT_ACCOUNT = DEFAULT_ACCOUNT
+
+ACCOUNT_PATTERN = '{}-{}'
+SOURCE_ACCOUNT_PATTERN = 'src-{}'
+DESTINATION_ACCOUNT_PATTERN = 'dst-{}'
+
+FEE = Decimal('0.00001')
+ACCOUNT_OPENING_BALANCE = Decimal('0.1')

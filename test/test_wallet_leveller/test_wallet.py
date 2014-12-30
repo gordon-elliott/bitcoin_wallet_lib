@@ -2,26 +2,22 @@ __copyright__ = 'Copyright(c) Gordon Elliott 2014'
 
 import logging
 import unittest
-import time
 
 from decimal import Decimal
 
-from multiprocessing import Process, Queue
-
-from event_api.pub_sub import Publisher, subscribe
 from wallet_leveller.wallet import Wallet
 
-SOURCE_URI = "http://admin1:123@127.0.0.1:19001"
-DESTINATION_URI = "http://admin2:123@127.0.0.1:19011"
-
-SOURCE_DEFAULT_ACCOUNT = ''
-DESTINATION_DEFAULT_ACCOUNT = ''
+from test_wallet_leveller.constants import (
+    SOURCE_URI,
+    DESTINATION_URI,
+    SOURCE_DEFAULT_ACCOUNT,
+    DESTINATION_DEFAULT_ACCOUNT,
+    FEE,
+    ACCOUNT_OPENING_BALANCE
+)
 
 SOURCE_TEST_ACCOUNT = 'test'
 DESTINATION_TEST_ACCOUNT = 'test'
-
-FEE = Decimal('0.00001')
-ACCOUNT_OPENING_BALANCE = Decimal('0.1')
 
 class WalletTests(unittest.TestCase):
 

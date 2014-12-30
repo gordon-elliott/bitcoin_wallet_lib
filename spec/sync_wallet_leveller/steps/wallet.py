@@ -9,30 +9,19 @@ __copyright__ = 'Copyright(c) Gordon Elliott 2014'
 from behave import given, when, then
 from hamcrest import assert_that, equal_to
 
-from test_wallet_leveller.common import wallet_from_name
+from test_wallet_leveller.behave_utils import wallet_from_name, create_wallet
+from test_wallet_leveller.constants import DEFAULT_ACCOUNT
 
-from test_wallet_leveller.test_wallet_signals import (
-    SOURCE_DEFAULT_ACCOUNT,
-    DESTINATION_DEFAULT_ACCOUNT
-)
 
-@given('we have a source wallet with a balance of {balance_amount:Decimal} BTC')
-def set_source_balance(context, balance_amount):
-    context.source.move_to_account(
-        SOURCE_DEFAULT_ACCOUNT, context.source_account_name,
-        balance_amount - context.source.balance,
-        'Priming source test account'
+@given('we have a {wallet_name} wallet with a balance of {balance_amount:Decimal} BTC')
+def set_wallet_balance(context, wallet_name, balance_amount):
+    wallet = create_wallet(context, wallet_name)
+    wallet.move_to_account(
+        DEFAULT_ACCOUNT, context.account_names[wallet_name],
+        balance_amount - wallet.balance,
+        'Priming test wallet'
     )
-    assert_that(context.source.balance, equal_to(balance_amount))
-
-@given('we have a destination wallet with a balance of {balance_amount:Decimal} BTC')
-def set_destination_balance(context, balance_amount):
-    context.destination.move_to_account(
-        DESTINATION_DEFAULT_ACCOUNT, context.destination_account_name,
-        balance_amount - context.destination.balance,
-        'Priming destination test account'
-    )
-    assert_that(context.destination.balance, equal_to(balance_amount))
+    assert_that(wallet.balance, equal_to(balance_amount))
 
 @when('we transfer {transfer_amount:Decimal} BTC from {source} to {destination}')
 def move_funds(context, transfer_amount, source, destination):

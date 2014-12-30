@@ -4,7 +4,7 @@ import random
 
 from wallet_leveller.wallet import Wallet
 
-from test_wallet_leveller.test_wallet_signals import (
+from test_wallet_leveller.constants import (
     SOURCE_URI,
     DESTINATION_URI,
     SOURCE_ACCOUNT_PATTERN,
