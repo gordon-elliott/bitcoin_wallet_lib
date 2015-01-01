@@ -32,7 +32,9 @@ class ConflictingWaterMarks(Exception):
 
 class _WalletRegistration(object):
 
-    def __init__(self, wallet, low_water_mark=None, high_water_mark=None):
+    def __init__(self, wallet, desired_level=None, low_water_mark=None, high_water_mark=None):
+
+        # TODO include desired_level into water mark checks
 
         if (
             low_water_mark is not None and high_water_mark is not None
@@ -41,6 +43,8 @@ class _WalletRegistration(object):
             raise ConflictingWaterMarks
 
         self._wallet = wallet
+        self._desired_level = desired_level     # when making an adjustment the Leveller will attempt to have
+                                                # this balance in this wallet
         self._low_water_mark = low_water_mark   # the Leveller will try to respect the LWM provided
                                                 # that there are sufficient funds in the suite of wallets
         self._high_water_mark = high_water_mark # the HWM is more of a guide than a hard limit
@@ -49,29 +53,34 @@ class _WalletRegistration(object):
 
     @property
     def funds_required(self):
-        return self._low_water_mark is not None and self.adjusted_balance < self._low_water_mark
+        if self._low_water_mark is None:
+            return False
+        else:
+            return self.adjusted_balance < self._low_water_mark
 
     @property
     def funds_surplus(self):
-        return self.adjusted_balance > self._high_water_mark
+        if self._high_water_mark is None:
+            return False
+        else:
+            return self.adjusted_balance > self._high_water_mark
 
     @property
     def required_funds(self):
-        if self.funds_required:
-            return self._high_water_mark - self.adjusted_balance
+        if self._desired_level is not None and self.funds_required:
+            return self._desired_level - self.adjusted_balance
         else:
             return Decimal('0.0')
 
     @property
     def surplus_funds(self):
-        if self.funds_surplus:
-            return self.adjusted_balance - self._low_water_mark
+        """ For information only - not used in computations
+        :return:
+        """
+        if self._desired_level is not None and self.funds_surplus:
+            return self.adjusted_balance - self._desired_level
         else:
             return Decimal('0.0')
-
-    @property
-    def funds_available(self):
-        return self.adjusted_balance
 
     def apply_adjustment(self, amount):
         self._adjustments.append(amount)
@@ -93,7 +102,7 @@ class _WalletConnection(object):
         return (
             self._destination.funds_required
             and
-            self._destination.required_funds <= self._source.funds_available
+            self._destination.required_funds <= self._source.adjusted_balance
         ) or (
             self._destination.funds_surplus
         )
@@ -139,8 +148,8 @@ class Leveller(object):
         self._wallets = {}
         self._connections = []
 
-    def add_wallet(self, wallet, low_water_mark, high_water_mark):
-        wallet_registration = _WalletRegistration(wallet, low_water_mark, high_water_mark)
+    def add_wallet(self, wallet, desired_level, low_water_mark, high_water_mark):
+        wallet_registration = _WalletRegistration(wallet, desired_level, low_water_mark, high_water_mark)
         self._wallets[wallet] = wallet_registration
         return wallet_registration
 
@@ -166,6 +175,9 @@ class Leveller(object):
 
     def surplus_funds(self, wallet):
         return Decimal('-1.0') * (self._get_registration(wallet)).surplus_funds
+
+    def adjusted_balance(self, wallet):
+        return (self._get_registration(wallet)).adjusted_balance
 
     def proposed_transfers(self):
         graph = self._connection_graph

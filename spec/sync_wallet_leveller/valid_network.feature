@@ -5,12 +5,12 @@ Feature: The Leveller connects the wallets into a directed, acyclic graph (DAG)
   Background: Set up Leveller
     Given we have a leveller
       And a suite of wallets
-      | name    | balance | lwm   | hwm   |
-      | savings |   600.0 |       |       |
-      | current |   200.0 | 100.0 | 300.0 |
-      | mobile  |    20.0 |  10.0 |  30.0 |
-      | online  |    20.0 |   5.0 |  25.0 |
-      | tipping |      .2 |    .1 |    .3 |
+      | name    | balance | desired | lwm   | hwm   |
+      | savings |   600.0 |         |       |       |
+      | current |   200.0 |   200.0 | 100.0 | 300.0 |
+      | mobile  |    20.0 |    25.0 |  10.0 |  30.0 |
+      | online  |    20.0 |    20.0 |   5.0 |  25.0 |
+      | tipping |      .2 |      .2 |    .1 |    .3 |
 
   Scenario: Leveller can load a correctly formed graph of wallets
     Given the wallets are connected thus
