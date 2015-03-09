@@ -15,11 +15,11 @@ Feature: The Leveller connects the wallets into a directed, acyclic graph (DAG)
   Scenario: Leveller can load a correctly formed graph of wallets
     Given the wallets are connected thus
     | source  | destination | weight |
-    | savings | current     | 1.0    |
-    | current | mobile      | 1.0    |
-    | current | online      | 1.0    |
-    | mobile  | tipping     | 1.0    |
-    | online  | tipping     | 1.0    |
+    | savings | current     |      1 |
+    | current | mobile      |      1 |
+    | current | online      |      1 |
+    | mobile  | tipping     |      1 |
+    | online  | tipping     |      1 |
     When the wallets are added to the leveller
     Then the leveller can check that the defined network has no cycles
      And the leveller finds no funds need to be moved
@@ -27,10 +27,20 @@ Feature: The Leveller connects the wallets into a directed, acyclic graph (DAG)
   Scenario: Leveller can identify an incorrectly formed graph of wallets
     Given the wallets are connected thus
     | source  | destination | weight |
-    | savings | current     | 1.0    |
-    | current | mobile      | 1.0    |
-    | current | online      | 1.0    |
-    | mobile  | tipping     | 1.0    |
-    | online  | current     | 1.0    |
+    | savings | current     |      1 |
+    | current | mobile      |      1 |
+    | current | online      |      1 |
+    | mobile  | tipping     |      1 |
+    | online  | current     |      1 |
     When the wallets are added to the leveller
     Then the leveller can spot that the defined network includes cycles
+
+  Scenario: Leveller can identify duplicate connections between wallets
+    Given the wallets are connected thus:
+    | source  | destination | weight |
+    | savings | current     |      1 |
+    | current | mobile      |      1 |
+    | current | mobile      |      1 |
+    When the wallets are added to the leveller
+    Then the leveller can spot that a duplicate connection between wallets has been specified
+    

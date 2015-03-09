@@ -30,6 +30,10 @@ class ConflictingWaterMarks(Exception):
     pass
 
 
+class DuplicateConnection(Exception):
+    pass
+
+
 class _WalletRegistration(object):
 
     def __init__(self, wallet, desired_level=None, low_water_mark=None, high_water_mark=None):
@@ -95,23 +99,33 @@ class _WalletConnection(object):
     def __init__(self, source, destination, weight):
         self._source = source
         self._destination = destination
-        self._weight = weight   # TODO implement weighted transfers
+        self._weight = weight
 
-    @property
-    def transfer_permitted(self):
+    def matches(self, other):
+        return self._source == other._source and self._destination == other._destination
+
+    def _get_weight_factor(self, input_weights):
+        return Decimal(self._weight) / Decimal(input_weights)
+
+    def transfer_permitted(self, input_weights):
+        weight_factor = self._get_weight_factor(input_weights)
         return (
             self._destination.funds_required
             and
-            self._destination.required_funds <= self._source.adjusted_balance
+            (self._destination.required_funds * weight_factor) <= self._source.adjusted_balance
         ) or (
             self._destination.funds_surplus
         )
 
-    def generate_transfer(self):
+    def apply_transfer(self, weighted_amount):
+        self._source.apply_adjustment(-1 * weighted_amount)
+        self._destination.apply_adjustment(weighted_amount)
+
+    def generate_transfer(self, input_weights):
+        weight_factor = self._get_weight_factor(input_weights)
         amount = self._destination.required_funds - self._destination.surplus_funds
-        self._source.apply_adjustment(-1 * amount)
-        self._destination.apply_adjustment(amount)
-        return _Transfer(self, amount)
+        weighted_amount = amount * weight_factor
+        return _Transfer(self, weighted_amount)
 
 
 class _Transfer(object):
@@ -131,6 +145,9 @@ class _Transfer(object):
     @property
     def amount(self):
         return self._amount
+
+    def apply_transfer(self):
+        self._connection.apply_transfer(self._amount)
 
     def execute(self):
         # TODO use wallet to complete the desired transfer
@@ -160,6 +177,9 @@ class Leveller(object):
             raise UnknownWallet('Destination wallet not registered')
 
         connection = _WalletConnection(self._wallets[source], self._wallets[destination], weight)
+        if any(existing_connection.matches(connection) for existing_connection in self._connections):
+            raise DuplicateConnection()
+
         self._connections.append(connection)
 
         return connection
@@ -180,14 +200,47 @@ class Leveller(object):
         return (self._get_registration(wallet)).adjusted_balance
 
     def proposed_transfers(self):
+
+        def _get_connection(source, destination):
+            edge = graph.edge[source][destination]
+            return edge['connection']
+
         graph = self._connection_graph
-        sorted_nodes = topological_sort(graph)
+
+        # TODO encapsulate and document this logic
+        non_root_nodes = [node for node, degree in graph.in_degree().items() if degree > 0]
+        sorted_nodes = [node for node in reversed(topological_sort(graph)) if node in non_root_nodes]
+
         transfers = []
-        for src, dest in reversed(list(bfs_edges(graph, source=sorted_nodes[0]))):
-            edge = graph.edge[src][dest]
-            connection = edge['connection']
-            if connection.transfer_permitted:
-                transfers.append(connection.generate_transfer())
+        for destination in sorted_nodes:
+            total_weight = 1
+            potential_connections = set(
+                _get_connection(source, destination)
+                for source in graph.predecessors(destination)
+            )
+            valid_connections = set()
+            while potential_connections != valid_connections:
+                total_weight = sum(
+                    connection._weight
+                    for connection in potential_connections
+                )
+                for connection in potential_connections:
+                    if connection.transfer_permitted(total_weight):
+                        valid_connections.add(connection)
+                    else:
+                        potential_connections.remove(connection)
+                        valid_connections = set()
+                        break
+
+            destination_transfers = [
+                connection.generate_transfer(total_weight)
+                for connection in valid_connections
+            ]
+
+            for transfer in destination_transfers:
+                transfer.apply_transfer()
+                transfers.append(transfer)
+
         return transfers
 
     @property

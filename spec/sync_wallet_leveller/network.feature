@@ -1,6 +1,5 @@
 # Copyright(c) Gordon Elliott 2014
 
-# TODO implement .feature for weightings
 # TODO multi root scenario
 
 Feature: The Leveller identifies the transfers needed to bring the suite of wallets into balance
@@ -16,11 +15,11 @@ Feature: The Leveller identifies the transfers needed to bring the suite of wall
       | tipping |      .2 |      .2 |    .1 |    .3 |
       And the wallets are connected thus
       | source  | destination | weight |
-      | savings | current     | 1.0    |
-      | current | mobile      | 1.0    |
-      | current | online      | 1.0    |
-      | mobile  | tipping     | 1.0    |
-      | online  | tipping     | 1.0    |
+      | savings | current     |      1 |
+      | current | mobile      |      1 |
+      | current | online      |      1 |
+      | mobile  | tipping     |      1 |
+      | online  | tipping     |      1 |
 
   Scenario Outline: Leveller can identify simple, single transfers
     When the funds in <modified wallet> are adjusted by <payment amount> BTC

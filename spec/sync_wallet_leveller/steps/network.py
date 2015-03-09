@@ -5,6 +5,8 @@ from decimal import Decimal
 from behave import given, when, then
 from hamcrest import assert_that, equal_to
 
+from wallet_leveller.leveller import DuplicateConnection
+
 from test_wallet_leveller.behave_utils import wallet_from_name, create_wallet
 from test_wallet_leveller.constants import DEFAULT_ACCOUNT
 
@@ -27,11 +29,16 @@ def wallet_list(context):
 
 @given('the wallets are connected thus')
 def connection_list(context):
+    context.connections_correct = True
     for row in context.table:
         source_wallet = wallet_from_name(context, row['source'])
         destination_wallet = wallet_from_name(context, row['destination'])
+        weight = int(row['weight']) if row['weight'] else 1
 
-        context.leveller.connect(source_wallet, destination_wallet, row['weight'])
+        try:
+            context.leveller.connect(source_wallet, destination_wallet, weight)
+        except DuplicateConnection:
+            context.connections_correct = False
 
 @when('the funds in {modified_wallet} are adjusted by {payment_amount:Decimal} BTC')
 def introduce_funds(context, modified_wallet, payment_amount):
