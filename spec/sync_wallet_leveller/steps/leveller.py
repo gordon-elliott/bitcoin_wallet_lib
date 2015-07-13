@@ -3,7 +3,7 @@ __copyright__ = 'Copyright(c) Gordon Elliott 2014'
 from behave import given, when, then
 from hamcrest import assert_that, equal_to
 
-from wallet_leveller.leveller import Leveller
+from wallet_leveller.leveller import Leveller, ConflictingWaterMarks
 from test_wallet_leveller.behave_utils import wallet_from_name
 
 
@@ -14,7 +14,12 @@ def create_leveller(context):
 @given('we add the {wallet_name} wallet to the leveller specifying {desired_level:Decimal}, {low_water_mark:Decimal} and {high_water_mark:Decimal} BTC desired level, low water mark and high water mark')
 def add_wallet(context, wallet_name, desired_level, low_water_mark, high_water_mark):
     wallet = wallet_from_name(context, wallet_name)
-    context.leveller.add_wallet(wallet, desired_level, low_water_mark, high_water_mark)
+    try:
+        context.leveller.add_wallet(wallet, desired_level, low_water_mark, high_water_mark)
+    except ConflictingWaterMarks:
+        context.watermark_conflict = True
+    else:
+        context.watermark_conflict = False
 
 @given('we add the {wallet_name} wallet to the leveller specifying {desired_level:Decimal} and {high_water_mark:Decimal} BTC desired level and high water mark')
 def add_wallet_no_lwm(context, desired_level, wallet_name, high_water_mark):

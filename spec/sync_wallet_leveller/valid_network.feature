@@ -21,7 +21,7 @@ Feature: The Leveller connects the wallets into a directed, acyclic graph (DAG)
     | mobile  | tipping     |      1 |
     | online  | tipping     |      1 |
     When the wallets are added to the leveller
-    Then the leveller can check that the defined network has no cycles
+    Then the leveller can check that the defined network is valid
      And the leveller finds no funds need to be moved
 
   Scenario: Leveller can identify an incorrectly formed graph of wallets

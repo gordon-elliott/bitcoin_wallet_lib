@@ -38,10 +38,6 @@ Feature: The Leveller manages a set of wallets
     |            0.57 |           0.2 |            0.1 |             0.3 |         -0.37 |
     |        40000.0  |       20000.0 |        10000.0 |         30000.0 |     -20000.0  |
 
-#TODO check exception thrown for inconsistent watermarks
-
-#TODO split following scenarios into another feature?
-
   Scenario: Connect two wallets
     Given we have a source wallet with a balance of 0.1 BTC
       And we have a destination wallet with a balance of 0.1 BTC

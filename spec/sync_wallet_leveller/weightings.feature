@@ -42,5 +42,3 @@ Feature: Connections can be weighted so transfers are made according to the weig
     | current | mobile      |  24.99 |
     | online  | tipping     |   0.2  |
     And the adjusted balance in the tipping wallet will be 0.2 BTC
-
-# TODO Feature: Complex family-children weightings

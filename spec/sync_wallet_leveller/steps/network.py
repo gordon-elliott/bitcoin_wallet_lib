@@ -40,6 +40,8 @@ def connection_list(context):
         except DuplicateConnection:
             context.connections_correct = False
 
+    context.connections_correct = context.connections_correct and context.leveller.is_valid
+
 @when('the funds in {modified_wallet} are adjusted by {payment_amount:Decimal} BTC')
 def introduce_funds(context, modified_wallet, payment_amount):
     wallet = wallet_from_name(context, modified_wallet)

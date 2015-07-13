@@ -84,6 +84,10 @@ class Wallet(object):
             current = time()
         return current < timeout
 
+    def __repr__(self):
+        """ Provide a string representation
+        """
+        return "{}('{}')".format(self.__class__.__name__, self._account_name)
 
 """
 >>> bitcoinrpc.connect_to_remote('admin1', '123', host='localhost', port=19001)

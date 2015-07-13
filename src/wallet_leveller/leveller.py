@@ -17,12 +17,22 @@ __copyright__ = 'Copyright(c) Gordon Elliott 2014'
     to keep most funds in the savings account provided that there are sufficient
     funds in the current account to deal with day-to-day expenditure.
 """
+import logging
+
 from decimal import Decimal
+from enum import Enum
 
 from networkx import DiGraph, is_directed_acyclic_graph, bfs_edges, topological_sort
 
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+
 class UnknownWallet(Exception):
+    pass
+
+
+class DesiredLevelMissing(Exception):
     pass
 
 
@@ -34,15 +44,30 @@ class DuplicateConnection(Exception):
     pass
 
 
+class NetworkInvalid(Enum):
+    IsNotDAG = 'Network is not a directed-acyclic graph'
+    RootWithHighWaterMark = 'A root of the graph specifies a superfluous high water mark'
+
+
 class _WalletRegistration(object):
 
     def __init__(self, wallet, desired_level=None, low_water_mark=None, high_water_mark=None):
 
-        # TODO include desired_level into water mark checks
-
         if (
             low_water_mark is not None and high_water_mark is not None
             and low_water_mark > high_water_mark
+        ):
+            raise ConflictingWaterMarks
+
+        if (
+            low_water_mark is not None and desired_level is not None
+            and low_water_mark > desired_level
+        ):
+            raise ConflictingWaterMarks
+
+        if (
+            high_water_mark is not None and desired_level is not None
+            and desired_level > high_water_mark
         ):
             raise ConflictingWaterMarks
 
@@ -93,6 +118,12 @@ class _WalletRegistration(object):
     def adjusted_balance(self):
         return sum(self._adjustments) + self._wallet.balance
 
+    @property
+    def is_valid_root(self):
+        return self._high_water_mark is None
+
+    def __repr__(self):
+        return 'WalletRegistration({self._wallet}, {self._desired_level}, {self._low_water_mark}, {self._high_water_mark})'.format(self=self)
 
 class _WalletConnection(object):
 
@@ -109,6 +140,11 @@ class _WalletConnection(object):
 
     def transfer_permitted(self, input_weights):
         weight_factor = self._get_weight_factor(input_weights)
+
+        log.debug('Transfer permitted? %r, %r', self._destination.funds_required, self._destination.funds_surplus)
+        if self._destination.funds_required:
+            log.debug('Transfer permitted? %f * %f <= %f', self._destination.required_funds, weight_factor, self._source.adjusted_balance)
+
         return (
             self._destination.funds_required
             and
@@ -127,6 +163,8 @@ class _WalletConnection(object):
         weighted_amount = amount * weight_factor
         return _Transfer(self, weighted_amount)
 
+    def __repr__(self):
+        return 'WalletConnection({self._source}, {self._destination}, {self._weight})'.format(self=self)
 
 class _Transfer(object):
 
@@ -149,17 +187,11 @@ class _Transfer(object):
     def apply_transfer(self):
         self._connection.apply_transfer(self._amount)
 
-    def execute(self):
-        # TODO use wallet to complete the desired transfer
-        pass
+    def __repr__(self):
+        return 'Transfer({self._connection}, {self._amount})'.format(self=self)
 
 
 class Leveller(object):
-
-    # TODO need a wallet to accumulate surplus funds from the whole network
-    # this might be just the wallet with the greatest HWM, a designated default,
-    # or the root(s) of the network
-    # the other end-state is where the balances in all wallets reach zero
 
     def __init__(self):
         self._wallets = {}
@@ -207,8 +239,9 @@ class Leveller(object):
 
         graph = self._connection_graph
 
-        # TODO encapsulate and document this logic
+        # root nodes have no in edges; make a list of all the other nodes
         non_root_nodes = [node for node, degree in graph.in_degree().items() if degree > 0]
+        # process the nodes from the leaves towards the roots
         sorted_nodes = [node for node in reversed(topological_sort(graph)) if node in non_root_nodes]
 
         transfers = []
@@ -227,8 +260,10 @@ class Leveller(object):
                 for connection in potential_connections:
                     if connection.transfer_permitted(total_weight):
                         valid_connections.add(connection)
+                        log.debug('Transfer permitted: %r', connection)
                     else:
                         potential_connections.remove(connection)
+                        log.debug('Transfer not permitted: %r', connection)
                         valid_connections = set()
                         break
 
@@ -239,6 +274,7 @@ class Leveller(object):
 
             for transfer in destination_transfers:
                 transfer.apply_transfer()
+                log.debug('Transfer: %r', transfer)
                 transfers.append(transfer)
 
         return transfers
@@ -251,5 +287,21 @@ class Leveller(object):
         return dag
 
     @property
-    def is_valid_dag(self):
-        return is_directed_acyclic_graph(self._connection_graph)
+    def is_valid(self):
+
+        valid = True
+        errors = []
+
+        graph = self._connection_graph
+
+        if not is_directed_acyclic_graph(graph):
+            valid = False
+            errors.append(NetworkInvalid.IsNotDAG)
+
+        root_nodes = [node for node, degree in graph.in_degree().items() if degree == 0]
+        for root in root_nodes:
+            if not root.is_valid_root:
+                valid = False
+                errors.append(NetworkInvalid.RootWithHighWaterMark)
+
+        return valid, errors
